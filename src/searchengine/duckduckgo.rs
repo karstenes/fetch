@@ -3,14 +3,15 @@ use reqwest::{Client, self};
 use std::time::Duration;
 use tokio;
 use scraper::{Html, Selector};
+use html_escape;
 
 pub async fn search(query: &str, timeout: Duration) -> Result<Search, reqwest::Error> {
 
     let result = Client::builder()
         .user_agent("User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0")
         .build()?
-        .post("https://html.duckduckgo.com/html")
-        .body(query.to_string())
+        .get("https://html.duckduckgo.com/html")
+        //.body(query.to_string())
         .timeout(timeout)
         .query(&[("q", query)])
         .send()
@@ -35,9 +36,9 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Search, reqwest::E
             let title_select = Selector::parse(".result__a").unwrap();
             let title = x.select(&title_select).next().unwrap();
             SearchListing {
-                title: title.inner_html(),
+                title: html_escape::decode_html_entities(&title.inner_html()).to_string(),
                 url: title.value().attr("href").unwrap().to_string(),
-                description: snippet.text().next().unwrap().to_string()
+                description: snippet.text().to_owned().map(|x|x.to_string()).collect::<String>()
             }
         }).collect();
 
