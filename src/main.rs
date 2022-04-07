@@ -88,7 +88,7 @@ struct Context<'a> {
 }
 
 async fn metasearch(query: web::Query<SearchQuery>) -> impl Responder {
-    let ddg = searchengine::duckduckgo::search(&query.q, Duration::new(5,0)).boxed();
+    let ddg = searchengine::google::search(&query.q, Duration::new(5,0)).boxed();
     //let goog = searchengine::google::search(&query.q, Duration::new(5,0)).boxed();
 
     let futs = vec![ddg];
@@ -105,8 +105,9 @@ async fn metasearch(query: web::Query<SearchQuery>) -> impl Responder {
     tt.add_template("result", RESULT).unwrap();
 
     let rendered = tt.render("result", &Context{title: &query.q, results: &response[0].results}).unwrap();
-
+    
     HttpResponse::Ok().body(rendered)
+    //HttpResponse::Ok().body(format!("{:?}", response[0]))
     //HttpResponse::Ok().body(searchengine::google::search(&query.q, Duration::new(5,0)).await.expect("thing"))
 }
 
