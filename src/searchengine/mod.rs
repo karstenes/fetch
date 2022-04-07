@@ -1,8 +1,7 @@
 pub mod google;
 pub mod duckduckgo;
 
-use serde::Deserialize;
-use quick_xml::de::{from_str, DeError};
+use serde::Serialize;
 
 #[derive(Debug, Clone)]
 pub enum Engine {
@@ -10,7 +9,7 @@ pub enum Engine {
     DuckDuckGo,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SearchListing {
     pub title: String,
     pub url: String,

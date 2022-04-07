@@ -6,7 +6,9 @@ use scraper::{Html, Selector};
 
 pub async fn search(query: &str, timeout: Duration) -> Result<Search, reqwest::Error> {
 
-    let result = Client::new()
+    let result = Client::builder()
+        .user_agent("User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0")
+        .build()?
         .post("https://html.duckduckgo.com/html")
         .body(query.to_string())
         .timeout(timeout)
