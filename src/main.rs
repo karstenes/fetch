@@ -1,6 +1,5 @@
 mod searchengine;
 
-use std::convert::TryInto;
 use std::time::Duration;
 
 use actix_files as fs;
@@ -8,12 +7,14 @@ use actix_web::http::StatusCode;
 use actix_web::{middleware, web, App, HttpResponse, HttpServer, Responder, Result, HttpRequest};
 
 use futures::FutureExt;
-use searchengine::SearchListing;
+use searchengine::{SearchListing, Search};
 use serde::{Serialize, Deserialize};
 
 use futures::future::try_join_all;
 
 use tinytemplate::TinyTemplate;
+
+use rayon::prelude::*;
 
 static RESULT: &str = 
 r##"
@@ -37,6 +38,7 @@ r##"
             id="q"
             placeholder="Enter search query"
             class="results__input"
+            value="{query}"
           />
           <input type="submit" value="🔍" class="results__submit" />
         </form>
@@ -48,9 +50,10 @@ r##"
             <span class="result__title">
                 {listing.title}
             </span>
-            <span class="result__url">
-                {listing.url}
-            </span>
+            <div class="result__meta">
+                <span class="result__url">{listing.url}</span>
+                <span class="result__source">{listing.sources}</span>
+            </div>
         </a>
         <p class="result__desc">
             {listing.description}
@@ -84,14 +87,55 @@ struct SearchQuery {
 #[derive(Serialize)]
 struct Context<'a> {
     title: &'a String,
-    results: &'a [SearchListing]
+    results: &'a [Listing],
+    query: &'a str
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct Listing {
+    pub title: String,
+    pub url: String,
+    pub description: String,
+    pub sources: String,
+    pub quality: u8
+}
+
+async fn resolve_collisions(listings: Vec<Option<Search>>) -> Vec<Listing> {
+    let mut combined = Vec::new();
+
+    for o in listings {
+        match o {
+            Some(x) => {
+                for y in x.results {
+                    let s = combined.iter_mut().find(|r: &&mut SearchListing| -> bool {(*(*r)).url == y.url});
+                    match s {
+                        Some(val) => {
+                            val.sources.push(y.sources[0].clone());
+                            val.quality += y.quality;
+                        }
+                        None => {
+                            combined.push(y)
+                        }
+                    }
+                }
+            }
+            None => {
+                continue;
+            }
+        };
+    }
+    let mut combinednew: Vec<Listing> = combined.par_iter().map(|x| Listing{title: x.title.clone(), url: x.url.clone(), description: x.description.clone(), quality: x.quality, sources: x.sources.par_iter().map(|y| format!("{:?}", y)).collect::<Vec<String>>().join(" ")}).collect();
+    combinednew.par_sort_unstable_by(|a,b| a.quality.cmp(&b.quality).reverse());
+    combinednew
 }
 
 async fn metasearch(query: web::Query<SearchQuery>) -> impl Responder {
-    let ddg = searchengine::google::search(&query.q, Duration::new(5,0)).boxed();
-    //let goog = searchengine::google::search(&query.q, Duration::new(5,0)).boxed();
+    let start = tokio::time::Instant::now();
+    let ddg = searchengine::duckduckgo::search(&query.q, Duration::new(5,0)).boxed();
+    let goog = searchengine::google::search(&query.q, Duration::new(5,0)).boxed();
+    let bing = searchengine::bing::search(&query.q, Duration::new(5,0)).boxed();
 
-    let futs = vec![ddg];
+    let futs = vec![ddg, goog, bing];
 
     let result = try_join_all(futs).await;
 
@@ -100,14 +144,21 @@ async fn metasearch(query: web::Query<SearchQuery>) -> impl Responder {
         Err(e) => panic!("{:}", e),
     };
 
+    let render = tokio::time::Instant::now();
+
     let mut tt = TinyTemplate::new();
 
     tt.add_template("result", RESULT).unwrap();
-
-    let rendered = tt.render("result", &Context{title: &query.q, results: &response[0].results}).unwrap();
     
+    let torender = resolve_collisions(response).await;
+
+    let rendered = tt.render("result", &Context{title: &query.q, results: &torender, query: &query.q}).unwrap();
+    
+
+    println!("Total time: {}, Fetch time: {}, Render time: {}", start.elapsed().as_secs_f32(), start.elapsed().as_secs_f32()-render.elapsed().as_secs_f32(), render.elapsed().as_secs_f32());
+
     HttpResponse::Ok().body(rendered)
-    //HttpResponse::Ok().body(format!("{:?}", response[0]))
+    //HttpResponse::Ok().body(format!("{:?}", response))
     //HttpResponse::Ok().body(searchengine::google::search(&query.q, Duration::new(5,0)).await.expect("thing"))
 }
 

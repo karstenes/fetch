@@ -52,7 +52,7 @@ body {
 
 .results {
     max-width: 100%;
-    width: 1000px;
+    width: 800px;
     margin: 0 auto;
 }
 
@@ -89,8 +89,22 @@ body {
 .result__title:hover {
     text-decoration: underline;
 }
+.result__meta {
+    display: flex;
+    width: 100%;
+    justify-content: flex-start;
+}
 .result__url {
     font-size: .875rem;
+    margin-right: 0.5rem;
+}
+.result__source {
+    font-size: .875rem;
+    
+}
+.result__source:before {
+    content: '•';
+    margin-right: 0.5rem;
 }
 .result__desc {
     margin-top: 0.25rem;
