@@ -24,9 +24,10 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
         .text()
         .await?;
 
-    //let mut f = File::create("ddg.html").unwrap();
-
-    //write!(f, "{}", result);
+    if cfg!(debug_assertions) {
+        let mut f = File::create("ddg.html").unwrap();
+        write!(f, "{}", result).unwrap();
+    }
 
     if result.contains(r#"class="no-results""#) {
         return Ok(None);

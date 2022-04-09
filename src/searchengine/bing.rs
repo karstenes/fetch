@@ -5,7 +5,11 @@ use tokio;
 use scraper::{Html, Selector};
 use html_escape;
 
-const RESULT_PATH: &str = ".b_algo";
+use std::fs::File;
+use std::io::Write;
+
+
+const RESULT_PATH: &str = "div.b_results>div.b_algo";
 //const URL_PATH: &str = "h2>a";
 const DESCRIPTION_PATH: &str = "div.b_caption>p";
 const TITLE_PATH: &str = "h2>a";
@@ -29,6 +33,11 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
 
     if result.contains(r#"class="b_no""#) {
         return Ok(None);
+    }
+
+    if cfg!(debug_assertions) {
+        let mut f = File::create("bing.html").unwrap();
+        write!(f, "{}", result).unwrap();
     }
 
     let scrape  = tokio::time::Instant::now();
@@ -62,5 +71,5 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
         let _ = send.send(results);
     });
     println!("Bing request took {}, Scraping took {}", start.elapsed().as_secs_f32()-scrape.elapsed().as_secs_f32(), scrape.elapsed().as_secs_f32());
-    Ok(Some(Search{engine: Engine::Bing, results: recv.await.expect("Panic in duckduckgo html decode")}))
+    Ok(Some(Search{engine: Engine::Bing, results: recv.await.expect("Panic in bing html decode")}))
 }

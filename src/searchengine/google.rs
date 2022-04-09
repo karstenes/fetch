@@ -5,6 +5,7 @@ use scraper::{Html, Selector};
 use std::fs::File;
 use std::io::Write;
 
+const RESULTS_PATH: &str = "#rso";
 const RESULT_PATH: &str = "div>.g";
 const URL_PATH: &str = "div.yuRUbf>a";
 const VID_URL_PATH: &str = "div.ct3b9e>a";
@@ -34,21 +35,34 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
 
     let result = request.text().await?;
 
-    //let mut f = File::create("google.html").unwrap();
-
-    //write!(f, "{}", result);
+    if cfg!(debug_assertions) {
+        let mut f = File::create("google.html").unwrap();
+        write!(f, "{}", result).unwrap();
+    }
 
     let scrape  = tokio::time::Instant::now();
     let (send, recv) = tokio::sync::oneshot::channel();
     
     rayon::spawn(move || {
         let document = Html::parse_document(&result);
+
+        let results_selector = Selector::parse(RESULTS_PATH).unwrap();
+
+        let results = match document.select(&results_selector).next() {
+            Some(o) => o,
+            None => {
+                send.send(None);
+                return;
+            }
+        };
+    
         let result_selector = Selector::parse(RESULT_PATH).unwrap();
         
-        let results: Vec<SearchListing> = document.select(&result_selector)
+        let results: Vec<SearchListing> = results.select(&result_selector)
         .filter_map(|x| {
+            println!("{}\n", x.inner_html());
             let result_selector = Selector::parse(RESULT_PATH).unwrap();
-            if let Some(o) = x.select(&result_selector).next() {
+            if let Some(_) = x.select(&result_selector).next() {
                 return None
             }
             if x.first_child().unwrap().value().as_element().unwrap().name() == "g-section-with-header" {
@@ -90,10 +104,15 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
             })
         }).collect();
 
-        let _ = send.send(results);
+        let _ = send.send(Some(results));
     });
+    let x = recv.await.expect("Panic in google html decode");
+
+    if let None = x {
+        return Ok(None);
+    }
     println!("Google request took {}, Scraping took {}", start.elapsed().as_secs_f32()-scrape.elapsed().as_secs_f32(), scrape.elapsed().as_secs_f32());
-    Ok(Some(Search{engine: Engine::Google, results: recv.await.expect("Panic in duckduckgo html decode")}))
+    Ok(Some(Search{engine: Engine::Google, results: x.unwrap()}))
     
     //Ok(result)
 }
