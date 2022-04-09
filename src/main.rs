@@ -114,6 +114,7 @@ async fn resolve_collisions(listings: Vec<Option<Search>>) -> Vec<Listing> {
                             val.quality += y.quality;
                         }
                         None => {
+                            
                             combined.push(y)
                         }
                     }
@@ -124,7 +125,12 @@ async fn resolve_collisions(listings: Vec<Option<Search>>) -> Vec<Listing> {
             }
         };
     }
-    let mut combinednew: Vec<Listing> = combined.par_iter().map(|x| Listing{title: x.title.clone(), url: x.url.clone(), description: x.description.clone(), quality: x.quality, sources: x.sources.par_iter().map(|y| format!("{:?}", y)).collect::<Vec<String>>().join(" ")}).collect();
+    let mut combinednew: Vec<Listing> = combined.par_iter()
+    .map(|x| Listing{title: x.title.clone(), url: x.url.clone(), description: x.description.clone(), quality: x.quality, sources: 
+        x.sources.par_iter()
+        .map(|y| format!("{:?}", y)).
+        collect::<Vec<String>>().join(" ")})
+        .collect();
     combinednew.par_sort_unstable_by(|a,b| a.quality.cmp(&b.quality).reverse());
     combinednew
 }
@@ -134,9 +140,9 @@ async fn metasearch(query: web::Query<SearchQuery>) -> impl Responder {
     let ddg = searchengine::duckduckgo::search(&query.q, Duration::new(5,0)).boxed();
     let goog = searchengine::google::search(&query.q, Duration::new(5,0)).boxed();
     let bing = searchengine::bing::search(&query.q, Duration::new(5,0)).boxed();
-    let brave = searchengine::brave::search(&query.q, Duration::new(5,0)).boxed();
+    let brave = searchengine::brave::search(&query.q, Duration::new(5,0)).boxed();      
 
-    let futs = vec![bing, ddg, goog, brave];
+    let futs = vec![ddg, brave, bing, goog];
 
     let result = try_join_all(futs).await;
 

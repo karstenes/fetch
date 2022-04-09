@@ -9,10 +9,10 @@ use std::fs::File;
 use std::io::Write;
 
 
-const RESULT_PATH: &str = "div#results>div.snipper.fdb";
-const URL_PATH: &str = "h2>a";
-const DESCRIPTION_PATH: &str = "div.b_caption>p";
-const TITLE_PATH: &str = "h2>a";
+const RESULT_PATH: &str = "#results>div.snippet.fdb";
+const URL_PATH: &str = "a.result-header";
+const DESCRIPTION_PATH: &str = "p.snippet-description";
+const TITLE_PATH: &str = "a.result-header>span";
 
 pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Error> {
 
@@ -31,12 +31,12 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
         .text()
         .await?;
 
-    if result.contains(r#"class="b_no""#) {
+    if result.contains(r#"id="fallback""#) {
         return Ok(None);
     }
 
     if cfg!(debug_assertions) {
-        let mut f = File::create("debug/bing.html").unwrap();
+        let mut f = File::create("debug/brave.html").unwrap();
         write!(f, "{}", result).unwrap();
     }
 
@@ -55,7 +55,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
             let snippet_select = Selector::parse(DESCRIPTION_PATH).unwrap();
             let snippet = x.select(&snippet_select).next()?;
             let url_select = Selector::parse(URL_PATH).unwrap();
-            let url = x.select(&url_select).next()?;
+            let url = x.select(&url_select).next().unwrap();
             Some(SearchListing {
                 title: html_escape::decode_html_entities(&title.text().to_owned().map(|x|x.to_string()).collect::<String>()).to_string(),
                 url: url.value().attr("href").unwrap().to_string(),

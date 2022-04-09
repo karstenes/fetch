@@ -1,3 +1,5 @@
+use crate::RESULT;
+
 use super::*;
 use reqwest::{Client, self};
 use std::time::Duration;
@@ -9,9 +11,11 @@ use std::fs::File;
 use std::io::Write;
 
 
-const RESULT_PATH: &str = "div.b_results>div.b_algo";
+const RESULTS_PATH: &str = "#b_results";
+const RESULT_PATH: &str = "li.b_algo";
 //const URL_PATH: &str = "h2>a";
-const DESCRIPTION_PATH: &str = "div.b_caption>p";
+const DESCRIPTION_NORMAL_PATH: &str = "div.b_caption>p";
+const DESCRIPTION_CARD_PATH: &str = "li>div>span";
 const TITLE_PATH: &str = "h2>a";
 
 pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Error> {
@@ -45,18 +49,24 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
     let (send, recv) = tokio::sync::oneshot::channel();
 
     rayon::spawn(move || {
-        let document = Html::parse_document(&result);       
+        let document = Html::parse_document(&result);
+        
+        let results_selector = Selector::parse(RESULTS_PATH).unwrap();
+
+        let search = document.select(&results_selector).next().unwrap();
+
         let result_selector = Selector::parse(RESULT_PATH).unwrap();
 
-        let results: Vec<SearchListing> = document.select(&result_selector).filter_map(|x| {
+        let results: Vec<SearchListing> = search.select(&result_selector).filter_map(|x| {
             //println!("{}", x.inner_html()); 
             let title_select = Selector::parse(TITLE_PATH).unwrap();
             let title = x.select(&title_select).next().unwrap();
-            let snippet_select = Selector::parse(DESCRIPTION_PATH).unwrap();
+            let snippet_select = Selector::parse(DESCRIPTION_NORMAL_PATH).unwrap();
             let snippet = match x.select(&snippet_select).next() {
-                Some(x) => x,
+                Some(x) => {x}
                 None => {
-                    return None;
+                    let snippet_select = Selector::parse(DESCRIPTION_CARD_PATH).unwrap();
+                    x.select(&snippet_select).next()?
                 }
             };
             Some(SearchListing {

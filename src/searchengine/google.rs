@@ -47,10 +47,9 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
         let document = Html::parse_document(&result);
 
         let results_selector = Selector::parse(RESULTS_PATH).unwrap();
-        let searches = document.select(&results_selector).next().unwrap();
 
 
-        let results = match searches.select(&results_selector).next() {
+        let results = match document.select(&results_selector).next() {
             Some(o) => o,
             None => {
                 send.send(None).unwrap();
@@ -62,7 +61,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
         
         let results: Vec<SearchListing> = results.select(&result_selector)
         .filter_map(|x| {
-            println!("{}\n", x.inner_html());
+            //println!("{}\n", x.inner_html());
             let result_selector = Selector::parse(RESULT_PATH).unwrap();
             if let Some(_) = x.select(&result_selector).next() {
                 return None
@@ -110,10 +109,10 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
     });
     let x = recv.await.expect("Panic in google html decode");
 
+    println!("Google request took {}, Scraping took {}", start.elapsed().as_secs_f32()-scrape.elapsed().as_secs_f32(), scrape.elapsed().as_secs_f32());
     if let None = x {
         return Ok(None);
     }
-    println!("Google request took {}, Scraping took {}", start.elapsed().as_secs_f32()-scrape.elapsed().as_secs_f32(), scrape.elapsed().as_secs_f32());
     Ok(Some(Search{engine: Engine::Google, results: x.unwrap()}))
     
     //Ok(result)
