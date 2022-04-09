@@ -134,8 +134,9 @@ async fn metasearch(query: web::Query<SearchQuery>) -> impl Responder {
     let ddg = searchengine::duckduckgo::search(&query.q, Duration::new(5,0)).boxed();
     let goog = searchengine::google::search(&query.q, Duration::new(5,0)).boxed();
     let bing = searchengine::bing::search(&query.q, Duration::new(5,0)).boxed();
+    let brave = searchengine::brave::search(&query.q, Duration::new(5,0)).boxed();
 
-    let futs = vec![ddg, goog, bing];
+    let futs = vec![bing, ddg, goog, brave];
 
     let result = try_join_all(futs).await;
 
@@ -152,7 +153,7 @@ async fn metasearch(query: web::Query<SearchQuery>) -> impl Responder {
     
     let mut torender = resolve_collisions(response).await;
 
-    torender.truncate(15);
+    torender.truncate(20);
 
     let rendered = tt.render("result", &Context{title: &query.q, results: &torender, query: &query.q}).unwrap();
     

@@ -36,7 +36,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
     let result = request.text().await?;
 
     if cfg!(debug_assertions) {
-        let mut f = File::create("google.html").unwrap();
+        let mut f = File::create("debug/google.html").unwrap();
         write!(f, "{}", result).unwrap();
     }
 
@@ -47,11 +47,13 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
         let document = Html::parse_document(&result);
 
         let results_selector = Selector::parse(RESULTS_PATH).unwrap();
+        let searches = document.select(&results_selector).next().unwrap();
 
-        let results = match document.select(&results_selector).next() {
+
+        let results = match searches.select(&results_selector).next() {
             Some(o) => o,
             None => {
-                send.send(None);
+                send.send(None).unwrap();
                 return;
             }
         };

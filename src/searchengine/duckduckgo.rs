@@ -25,7 +25,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
         .await?;
 
     if cfg!(debug_assertions) {
-        let mut f = File::create("ddg.html").unwrap();
+        let mut f = File::create("debug/ddg.html").unwrap();
         write!(f, "{}", result).unwrap();
     }
 
@@ -60,7 +60,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
                 url: title.value().attr("href").unwrap().to_string(),
                 description: snippet.text().to_owned().map(|x|x.to_string()).collect::<String>(),
                 sources: vec![Engine::DuckDuckGo],
-                quality: 2,
+                quality: 3,
             })
         }).collect();
 

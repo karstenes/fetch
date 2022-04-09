@@ -1,6 +1,7 @@
 pub mod google;
 pub mod duckduckgo;
 pub mod bing;
+pub mod brave;
 
 use reqwest;
 use scraper;
@@ -9,7 +10,8 @@ use scraper;
 pub enum Engine {
     Google,
     DuckDuckGo,
-    Bing
+    Bing,
+    Brave
 }
 
 #[derive(Debug, Clone)]
