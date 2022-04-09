@@ -84,7 +84,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
                 Some(x) => x,
                 None => {
                     let video_description_select = Selector::parse(VID_DESCRIPTION_PATH).unwrap();
-                    x.select(&video_description_select).next().unwrap()
+                    x.select(&video_description_select).next()?
                 }
             };
             let link = match x.select(&link_select).next() {
@@ -101,7 +101,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
                 url: link.value().attr("href").unwrap().to_string(),
                 description: snippet.text().to_owned().map(|x|x.to_string()).collect::<String>(),
                 sources: vec![Engine::Google],
-                quality: 1
+                quality: 2
             })
         }).collect();
 

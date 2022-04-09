@@ -61,7 +61,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
                 url: url.value().attr("href").unwrap().to_string(),
                 description: snippet.text().to_owned().map(|x|x.to_string()).collect::<String>(),
                 sources: vec![Engine::Brave],
-                quality: 4,
+                quality: 3,
             })
         }).collect();
 

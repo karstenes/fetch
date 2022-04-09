@@ -1,5 +1,3 @@
-use crate::RESULT;
-
 use super::*;
 use reqwest::{Client, self};
 use std::time::Duration;
