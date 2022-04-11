@@ -4,6 +4,7 @@ use std::time::Duration;
 use tokio;
 use scraper::{Html, Selector};
 use html_escape;
+use log::{debug, info, error};
 
 use std::fs::File;
 use std::io::Write;
@@ -78,6 +79,6 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
 
         let _ = send.send(results);
     });
-    println!("Bing request took {}, Scraping took {}", start.elapsed().as_secs_f32()-scrape.elapsed().as_secs_f32(), scrape.elapsed().as_secs_f32());
+    info!("Bing request took {}, Scraping took {}", start.elapsed().as_secs_f32()-scrape.elapsed().as_secs_f32(), scrape.elapsed().as_secs_f32());
     Ok(Some(Search{engine: Engine::Bing, results: recv.await.expect("Panic in bing html decode")}))
 }

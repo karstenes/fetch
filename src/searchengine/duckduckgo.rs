@@ -6,6 +6,7 @@ use scraper::{Html, Selector};
 use html_escape;
 use std::fs::File;
 use std::io::Write;
+use log::{debug, info, error};
 
 pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Error> {
 
@@ -66,6 +67,6 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
 
         let _ = send.send(results);
     });
-    println!("DDG request took {}, Scraping took {}", start.elapsed().as_secs_f32()-scrape.elapsed().as_secs_f32(), scrape.elapsed().as_secs_f32());
+    info!("DDG request took {}, Scraping took {}", start.elapsed().as_secs_f32()-scrape.elapsed().as_secs_f32(), scrape.elapsed().as_secs_f32());
     Ok(Some(Search{engine: Engine::DuckDuckGo, results: recv.await.expect("Panic in duckduckgo html decode")}))
 }

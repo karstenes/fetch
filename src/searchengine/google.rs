@@ -2,6 +2,7 @@ use super::*;
 use reqwest::{Client, self};
 use std::time::Duration;
 use scraper::{Html, Selector};
+use log::{debug, info, error};
 use std::fs::File;
 use std::io::Write;
 
@@ -109,7 +110,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
     });
     let x = recv.await.expect("Panic in google html decode");
 
-    println!("Google request took {}, Scraping took {}", start.elapsed().as_secs_f32()-scrape.elapsed().as_secs_f32(), scrape.elapsed().as_secs_f32());
+    info!("Google request took {}, Scraping took {}", start.elapsed().as_secs_f32()-scrape.elapsed().as_secs_f32(), scrape.elapsed().as_secs_f32());
     if let None = x {
         return Ok(None);
     }

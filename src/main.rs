@@ -1,5 +1,4 @@
 mod searchengine;
-
 use std::time::Duration;
 
 use actix_files as fs;
@@ -10,11 +9,13 @@ use futures::FutureExt;
 use searchengine::{SearchListing, Search};
 use serde::{Serialize, Deserialize};
 
-use futures::future::try_join_all;
+use futures::future::join_all;
 
 use tinytemplate::TinyTemplate;
 
 use rayon::prelude::*;
+
+use log::{debug, error, log_enabled, info, Level};
 
 static RESULT: &str = 
 r##"
@@ -137,19 +138,26 @@ async fn resolve_collisions(listings: Vec<Option<Search>>) -> Vec<Listing> {
 
 async fn metasearch(query: web::Query<SearchQuery>) -> impl Responder {
     let start = tokio::time::Instant::now();
-    let ddg = searchengine::duckduckgo::search(&query.q, Duration::new(5,0)).boxed();
-    let goog = searchengine::google::search(&query.q, Duration::new(5,0)).boxed();
-    let bing = searchengine::bing::search(&query.q, Duration::new(5,0)).boxed();
-    let brave = searchengine::brave::search(&query.q, Duration::new(5,0)).boxed();      
 
-    let futs = vec![ddg, brave, bing, goog];
+    let futs = vec![
+        searchengine::duckduckgo::search(&query.q, Duration::new(5,0)).boxed(),
+        searchengine::google::search(&query.q, Duration::new(5,0)).boxed(),
+        searchengine::bing::search(&query.q, Duration::new(5,0)).boxed(),
+        searchengine::brave::search(&query.q, Duration::new(5,0)).boxed()
+        ];
 
-    let result = try_join_all(futs).await;
+    let result = join_all(futs).await;
 
-    let response = match result {
-        Ok(o) => o,
-        Err(e) => panic!("{:}", e),
-    };
+    let response = result.iter().filter_map(|x|{
+        match x {
+            Ok(o) => {
+                Some(o.clone())
+            }
+            Err(e) => {
+                panic!("{:}", e)
+            }
+        }    
+    }).collect();
 
     let render = tokio::time::Instant::now();
 
@@ -164,7 +172,7 @@ async fn metasearch(query: web::Query<SearchQuery>) -> impl Responder {
     let rendered = tt.render("result", &Context{title: &query.q, results: &torender, query: &query.q}).unwrap();
     
 
-    println!("Total time: {}, Fetch time: {}, Render time: {}", start.elapsed().as_secs_f32(), start.elapsed().as_secs_f32()-render.elapsed().as_secs_f32(), render.elapsed().as_secs_f32());
+    info!("Total time: {}, Fetch time: {}, Render time: {}", start.elapsed().as_secs_f32(), start.elapsed().as_secs_f32()-render.elapsed().as_secs_f32(), render.elapsed().as_secs_f32());
 
     HttpResponse::Ok().body(rendered)
     //HttpResponse::Ok().body(format!("{:?}", response))
@@ -182,6 +190,8 @@ async fn index() -> Result<fs::NamedFile> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init();    
+
     HttpServer::new(|| {
         App::new()
             .wrap(middleware::Logger::default())

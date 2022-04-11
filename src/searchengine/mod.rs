@@ -7,11 +7,27 @@ use reqwest;
 use scraper;
 
 #[derive(Debug, Clone)]
+pub struct CustomEngine {
+    pub name: String,
+    pub quality: u8,
+    pub search_url: String,
+    pub get: bool,
+    pub search_query_key: String,
+    pub results_container: String,
+    pub result_container: String,
+    pub title_selector: String,
+    pub url_selector: String,
+    pub description_selector: String,
+    pub no_results_string: String,
+}
+
+#[derive(Debug, Clone)]
 pub enum Engine {
     Google,
     DuckDuckGo,
     Bing,
-    Brave
+    Brave,
+    CustomEngine(CustomEngine),
 }
 
 #[derive(Debug, Clone)]
