@@ -1,8 +1,9 @@
 mod searchengine;
+
 use std::time::Duration;
 
 use actix_files as fs;
-use actix_web::http::StatusCode;
+use actix_web::http::{StatusCode};
 use actix_web::{middleware, web, App, HttpResponse, HttpServer, Responder, Result, HttpRequest};
 
 use futures::FutureExt;
@@ -15,7 +16,8 @@ use tinytemplate::TinyTemplate;
 
 use rayon::prelude::*;
 
-use log::{debug, error, log_enabled, info, Level};
+use log::info;
+use log4rs;
 
 static RESULT: &str = 
 r##"
@@ -40,6 +42,7 @@ r##"
             placeholder="Enter search query"
             class="results__input"
             value="{query}"
+            autocomplete="false"
           />
           <input type="submit" value="🔍" class="results__submit" />
         </form>
@@ -190,8 +193,7 @@ async fn index() -> Result<fs::NamedFile> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    env_logger::init();    
-
+    log4rs::init_file("log4rs.yaml", Default::default()).unwrap();
     HttpServer::new(|| {
         App::new()
             .wrap(middleware::Logger::default())

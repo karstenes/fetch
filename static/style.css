@@ -27,12 +27,12 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    padding-top: 25vh;
+    padding-top: 15vh;
 }
 .home__search-bar,
 .results__search-bar {
-    border-radius: 25px;
-    padding: 1rem;
+    border-radius: 5px;
+    padding: 0.5rem;
     background-color: white;
     display: flex;
     flex-wrap: nowrap;

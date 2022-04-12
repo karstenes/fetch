@@ -2,7 +2,7 @@ use super::*;
 use reqwest::{Client, self};
 use std::time::Duration;
 use scraper::{Html, Selector};
-use log::{debug, info, error};
+use log::info;
 use std::fs::File;
 use std::io::Write;
 
@@ -62,13 +62,19 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
         
         let results: Vec<SearchListing> = results.select(&result_selector)
         .filter_map(|x| {
+            let badres_select = Selector::parse("g-class-with-header").unwrap();
+            match x.select(&badres_select).next() {
+                Some(_) => {
+                    return None;
+                }
+                None => {
+                    ()
+                }
+            }
             //println!("{}\n", x.inner_html());
             let result_selector = Selector::parse(RESULT_PATH).unwrap();
             if let Some(_) = x.select(&result_selector).next() {
                 return None
-            }
-            if x.first_child().unwrap().value().as_element().unwrap().name() == "g-section-with-header" {
-                return None;
             }
             if let Some(o) = x.first_child().unwrap().value().as_element().unwrap().attr("class") {
                 if o.contains("kp-wholepage") {
@@ -117,4 +123,18 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
     Ok(Some(Search{engine: Engine::Google, results: x.unwrap()}))
     
     //Ok(result)
+}
+
+#[cfg(test)]
+mod test {
+    use std::time::Duration;
+
+    #[quickcheck_async::tokio]
+    async fn searchtest(query: String) -> bool {
+        let search = super::search(&query, Duration::new(5,0)).await;
+        match search {
+            Ok(_) => return true,
+            Err(_) => return false
+        }
+    } 
 }

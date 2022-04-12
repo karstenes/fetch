@@ -6,7 +6,7 @@ use scraper::{Html, Selector};
 use html_escape;
 use std::fs::File;
 use std::io::Write;
-use log::{debug, info, error};
+use log::info;
 
 pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Error> {
 
@@ -46,6 +46,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
         let links = document.select(&links_selector).next().unwrap();
 
         let results: Vec<SearchListing> = links.select(&result_selector).filter_map(|x| {
+
             //println!("{}", x.inner_html()); 
             let title_select = Selector::parse(".result__a").unwrap();
             let title = x.select(&title_select).next().unwrap();
@@ -69,4 +70,18 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
     });
     info!("DDG request took {}, Scraping took {}", start.elapsed().as_secs_f32()-scrape.elapsed().as_secs_f32(), scrape.elapsed().as_secs_f32());
     Ok(Some(Search{engine: Engine::DuckDuckGo, results: recv.await.expect("Panic in duckduckgo html decode")}))
+}
+
+#[cfg(test)]
+mod test {
+    use std::time::Duration;
+
+    #[quickcheck_async::tokio]
+    async fn searchtest(query: String) -> bool {
+        let search = super::search(&query, Duration::new(5,0)).await;
+        match search {
+            Ok(_) => return true,
+            Err(_) => return false
+        }
+    } 
 }

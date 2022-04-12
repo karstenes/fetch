@@ -4,7 +4,7 @@ use std::time::Duration;
 use tokio;
 use scraper::{Html, Selector};
 use html_escape;
-use log::{debug, info, error};
+use log::info;
 
 use std::fs::File;
 use std::io::Write;
@@ -70,4 +70,18 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
     });
     info!("Brave request took {}, Scraping took {}", start.elapsed().as_secs_f32()-scrape.elapsed().as_secs_f32(), scrape.elapsed().as_secs_f32());
     Ok(Some(Search{engine: Engine::Brave, results: recv.await.expect("Panic in bing html decode")}))
+}
+
+#[cfg(test)]
+mod test {
+    use std::time::Duration;
+
+    #[quickcheck_async::tokio]
+    async fn searchtest(query: String) -> bool {
+        let search = super::search(&query, Duration::new(5,0)).await;
+        match search {
+            Ok(_) => return true,
+            Err(_) => return false
+        }
+    } 
 }
