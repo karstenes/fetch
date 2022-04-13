@@ -21,7 +21,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
 
     let start = tokio::time::Instant::now();
 
-    let result = Client::builder()
+    let req = Client::builder()
         .user_agent("User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0")
         .build()?
         .get("https://www.bing.com/search")
@@ -30,7 +30,13 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
         .query(&[("q", query)])
         .send()
         .await?
-        .error_for_status()?
+        .error_for_status()?;
+    
+    if !req.url().as_str().starts_with("https://www.bing.com/search") {
+        return Err(Error::RedirectError(Engine::Bing, req.url().as_str().to_string()));
+    } 
+
+    let result = req
         .text()
         .await?;
 
@@ -85,14 +91,35 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use std::time::Duration;
 
     #[quickcheck_async::tokio]
     async fn searchtest(query: String) -> bool {
-        let search = super::search(&query, Duration::new(5,0)).await;
+        let search = search(&query, Duration::new(5,0)).await;
         match search {
             Ok(_) => return true,
-            Err(_) => return false
+            Err(e) => {
+                println!("{:?}", e);
+                match e {
+                    Error::RedirectError(..) => return true,
+                    Error::CaptchaError(_) => return true,
+                    Error::ReqwestError(r) => {
+                        if r.is_timeout() {
+                            println!("Timeout");
+                            return true;
+                        } else if r.status().is_some() {
+                            if r.status().unwrap().as_u16() == 403 {
+                                return true;
+                            }
+                            return false;
+                        } else {
+                            println!("reqwest error");
+                            return false;
+                        }
+                    }
+                }
+            }
         }
     } 
 }

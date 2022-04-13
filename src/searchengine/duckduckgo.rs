@@ -10,7 +10,6 @@ use log::info;
 
 
 pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Error> {
-
     if query.is_empty() {
         info!("DDG search query was empty");
         return Ok(None)
@@ -87,7 +86,6 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
 #[cfg(test)]
 mod test {
     use std::time::Duration;
-    use reqwest;
     use super::*;
     use crate::searchengine::Error;
 

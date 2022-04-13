@@ -16,10 +16,14 @@ const DESCRIPTION_PATH: &str = "p.snippet-description";
 const TITLE_PATH: &str = "a.result-header>span";
 
 pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Error> {
+    if query.is_empty() {
+        info!("DDG search query was empty");
+        return Ok(None)
+    };
 
     let start = tokio::time::Instant::now();
 
-    let result = Client::builder()
+    let req = Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36 Edg/100.0.1185.36")
         .build()?
         .get("https://search.brave.com/search")
@@ -28,7 +32,13 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
         .query(&[("q", query)])
         .send()
         .await?
-        .error_for_status()?
+        .error_for_status()?;
+    
+    if !req.url().as_str().starts_with("https://search.brave.com/search") {
+        return Err(Error::RedirectError(Engine::Brave, req.url().as_str().to_string()));
+    } 
+        
+    let result = req
         .text()
         .await?;
 
@@ -74,6 +84,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use std::time::Duration;
 
     #[quickcheck_async::tokio]
@@ -81,7 +92,27 @@ mod test {
         let search = super::search(&query, Duration::new(5,0)).await;
         match search {
             Ok(_) => return true,
-            Err(_) => return false
+            Err(e) => {
+                println!("{:?}", e);
+                match e {
+                    Error::RedirectError(..) => return true,
+                    Error::CaptchaError(_) => return true,
+                    Error::ReqwestError(r) => {
+                        if r.is_timeout() {
+                            println!("Timeout");
+                            return true;
+                        } else if r.status().is_some() {
+                            if r.status().unwrap().as_u16() == 403 {
+                                return true;
+                            }
+                            return false;
+                        } else {
+                            println!("reqwest error");
+                            return false;
+                        }
+                    }
+                }
+            }
         }
     } 
 }

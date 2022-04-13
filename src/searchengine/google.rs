@@ -15,6 +15,10 @@ const VID_DESCRIPTION_PATH: &str = "div.Uroaid";
 const TITLE_PATH: &str = "h3";
 
 pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Error> {
+    if query.is_empty() {
+        info!("DDG search query was empty");
+        return Ok(None)
+    };
 
     let start = tokio::time::Instant::now();
 
@@ -33,6 +37,10 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
     if request.url().as_ref().contains("sorry.google.com") {
         return Err(Error::CaptchaError(Engine::Google))
     }
+
+    if !request.url().as_str().starts_with("https://www.google.com/search") {
+        return Err(Error::RedirectError(Engine::Google, request.url().as_str().to_string()));
+    } 
 
     let result = request.text().await?;
 
@@ -127,6 +135,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use std::time::Duration;
 
     #[quickcheck_async::tokio]
@@ -134,7 +143,27 @@ mod test {
         let search = super::search(&query, Duration::new(5,0)).await;
         match search {
             Ok(_) => return true,
-            Err(_) => return false
+            Err(e) => {
+                println!("{:?}", e);
+                match e {
+                    Error::RedirectError(..) => return true,
+                    Error::CaptchaError(_) => return true,
+                    Error::ReqwestError(r) => {
+                        if r.is_timeout() {
+                            println!("Timeout");
+                            return true;
+                        } else if r.status().is_some() {
+                            if r.status().unwrap().as_u16() == 403 {
+                                return true;
+                            }
+                            return false;
+                        } else {
+                            println!("reqwest error");
+                            return false;
+                        }
+                    }
+                }
+            }
         }
     } 
 }
