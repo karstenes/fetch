@@ -38,7 +38,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
         return Ok(None);
     }
 
-    if cfg!(debug_assertions) {
+    if cfg!(feature = "savefile") {
         let mut f = File::create("debug/bing.html").unwrap();
         write!(f, "{}", result).unwrap();
     }

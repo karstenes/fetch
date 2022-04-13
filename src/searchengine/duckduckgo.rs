@@ -25,7 +25,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
         .text()
         .await?;
 
-    if cfg!(debug_assertions) {
+    if cfg!(feature = "savefile") {
         let mut f = File::create("debug/ddg.html").unwrap();
         write!(f, "{}", result).unwrap();
     }

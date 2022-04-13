@@ -46,7 +46,7 @@ pub async fn search(engine: CustomEngine, query: &str, timeout: Duration) -> Res
         return Ok(None);
     }
 
-    if cfg!(debug_assertions) {
+    if cfg!(feature = "savefile") {
         let mut f = File::create(format!("debug/{}.html", engine.name)).unwrap();
         write!(f, "{}", result).unwrap();
     }

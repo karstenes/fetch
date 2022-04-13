@@ -36,7 +36,7 @@ pub async fn search(query: &str, timeout: Duration) -> Result<Option<Search>, Er
 
     let result = request.text().await?;
 
-    if cfg!(debug_assertions) {
+    if cfg!(feature = "savefile") {
         let mut f = File::create("debug/google.html").unwrap();
         write!(f, "{}", result).unwrap();
     }
