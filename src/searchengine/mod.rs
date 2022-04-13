@@ -49,6 +49,7 @@ pub struct Search {
 #[derive(Debug)]
 pub enum Error {
     CaptchaError(Engine),
+    RedirectError(Engine, String),
     ReqwestError(reqwest::Error),
 }
 
@@ -61,6 +62,9 @@ impl From<reqwest::Error> for Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Error::RedirectError(x, y) => {
+                write!(f, "Got redirected by {:?} to {}", x, y)
+            }
             Error::CaptchaError(x) => {
                 write!(f, "Got captcha from {:?}", x)
             }

@@ -143,7 +143,7 @@ async fn metasearch(query: web::Query<SearchQuery>) -> impl Responder {
     let start = tokio::time::Instant::now();
 
     let futs = vec![
-        searchengine::duckduckgo::search(&query.q, Duration::new(5,0)).boxed(),
+        searchengine::duckduckgo::search("\u{0}", Duration::new(5,0)).boxed(),
         searchengine::google::search(&query.q, Duration::new(5,0)).boxed(),
         searchengine::bing::search(&query.q, Duration::new(5,0)).boxed(),
         searchengine::brave::search(&query.q, Duration::new(5,0)).boxed()
