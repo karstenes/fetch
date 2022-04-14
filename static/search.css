@@ -42,6 +42,10 @@ body {
   max-height: 2rem;
 }
 
+input:focus {
+  outline: none;
+}
+
 .search-button {
   position: relative;
   right: 0;

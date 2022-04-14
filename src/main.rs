@@ -203,6 +203,7 @@ async fn main() -> std::io::Result<()> {
                     .route("", web::get().to(index))
                     .service(web::scope("/search").route("", web::to(metasearch)))
                     .service(fs::Files::new("/static", "static").show_files_listing())
+                    .route("/favicon.ico", web::get().to(||{fs::NamedFile::open_async("static/favicon.ico")}))
             )
             .default_service(web::route().to(p404))
             
