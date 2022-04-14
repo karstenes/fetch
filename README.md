@@ -1,3 +1,3 @@
 # fetch
 
-metasearch engine
+(as of now) simple metasearch engine focused on speed
