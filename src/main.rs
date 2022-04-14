@@ -189,7 +189,7 @@ async fn p404(_req: HttpRequest) -> Result<fs::NamedFile> {
 
 async fn index() -> Result<fs::NamedFile> {
     Ok(fs::NamedFile::open("static/index.html")?)
-}
+}//test
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
